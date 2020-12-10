@@ -1,6 +1,47 @@
 import numpy as np
 from tkinter import *
-from visu import Tkmdp
+#from visu import Tkmdp
+
+
+def visualiser(root,Canevas,zoom,cases,RGB):
+		nblignes = cases.shape[0]
+		nbcolonnes = cases.shape[1]
+		Largeur = zoom*20*nbcolonnes+40
+		Hauteur = zoom*20*nblignes+40
+		mywhite = "#FFFFFF"
+		myyellow="#F9FB70"
+		PosX = 20+10*zoom
+		PosY = 20+10*zoom
+		
+		
+		for i in range(nblignes+1):
+			ni=zoom*20*i+20
+			Canevas.create_line(20, ni, Largeur-20,ni)
+		for j in range(nbcolonnes+1):
+			nj=zoom*20*j+20
+			Canevas.create_line(nj, 20, nj, Hauteur-20)
+		colordraw(zoom,Canevas,cases,RGB)
+		Canevas.focus_set()
+		Canevas.pack(padx =5, pady =5)
+		Pion = Canevas.create_oval(PosX-10,PosY-10,PosX+10,PosY+10,width=2,outline='black',fill=myyellow)
+		Canevas.coords(Pion,PosX -9*zoom, PosY -9*zoom, PosX +9*zoom, PosY +9*zoom)
+
+		
+
+def colordraw(zoom,Canevas,cases,RGB):
+		nblignes = cases.shape[0]
+		nbcolonnes = cases.shape[1]
+		for i in range(nblignes):
+			for j in range(nbcolonnes):          
+				y =zoom*20*i+20
+				x =zoom*20*j+20
+				if cases[i,j,0]>0:            
+				#Canevas.create_oval(x+zoom*(10-3),y+zoom*(10-3),x+zoom*(10+3),y+zoom*(10+3),width=1,outline=color[g[i,j]],fill=color[g[i,j]])
+					#print(type(cases[i,j,0]))
+					color = int(cases[i,j,0])
+					Canevas.create_text(x+zoom*(10),y+zoom*(10), text=str(cases[i,j,1]),fill=RGB[color],font = "Verdana "+str(int(6*zoom))+" bold")
+				else:
+					Canevas.create_rectangle(x, y, x+zoom*20, y+zoom*20, fill=RGB[0])
 
 class Generator():
 	def __init__(self,nb_ligne,nb_colonne,PMur,PCouleur,p):
@@ -20,13 +61,14 @@ class Generator():
 		self.PMur = PMur
 		self.DictCouleur = {"vert":1,"bleu":2,"rouge":3,"noir":4}
 		#RGB information for {walls, vert, bleu,rouge,noir}
-		self.RGB = ["#292421","00C957","1E90FF","#FF0000","000000"]
+		self.RGB = ["#5E5E64","#25A531","#0B79F7","#D20B18","#2D2B2B"]
 		#pour chaque case, enregistre sa couleur(:,:,0) et son chiffre(:,:,1)
 		self.cases = np.zeros((nb_ligne,nb_colonne,2))
 		self.pVert, self.pBleu, self.pRouge, self.Pnoir = PCouleur
 
 		#Tkinter
-		self.tk = Tkmdp(p)
+		self.tk = Tk()
+		self.tk.title('MDP')
 
 	def random_init(self):
 		#initialiser les murs
@@ -65,6 +107,23 @@ class Generator():
 		print(self.cases[:,:,0])
 		print("chiffre")
 		print(self.cases[:,:,1])
+
+		#visualiser(self.tk,2,self.cases, self.RGB)
+		zoom=2
+		nblignes = self.cases.shape[0]
+		nbcolonnes = self.cases.shape[1]
+
+		Largeur = zoom*20*nbcolonnes+40
+		Hauteur = zoom*20*nblignes+40
+		mywhite = "#FFFFFF"
+		
+		Canevas = Canvas(self.tk, width = Largeur, height =Hauteur, bg =mywhite)
+		visualiser(self.tk,Canevas,zoom,self.cases,self.RGB)
+		#colordraw(zoom,Canevas,self.cases,self.RGB)
+
+		
+		self.tk.mainloop()
+	
 
 
 if __name__=="__main__":
