@@ -1,16 +1,18 @@
 import numpy as np
 from tkinter import *
 from visu import Tkmdp
+from pdm import pdm
 
 
 class Generator():
-	def __init__(self,nb_ligne,nb_colonne,PMur,PCouleur,p):
+	def __init__(self,nb_ligne,nb_colonne,PMur,PCouleur,p, PLOT="True"):
 		'''
 		IN: 
 			nb_ligne,nb_colonne: grilles rectangulaires de taille controllees
 			PMur: probabilite d'occurence des murs controllees
 			PCouleur: probabilite d'attribution des couleurs controllees
 			p: probabilite du mouvement
+			PLOT: affichage de tkinter
 		self:
 			self.cases: taille [nb_ligne,nb_colonne,2] enregistre la couleur et le chiffre correspond a chaque case
 			self.cases[:,:,0]: couleurs {0,1,2,3,4}. 0 represente la mur
@@ -31,6 +33,7 @@ class Generator():
 		self.tk = Tk()
 		self.tk.title('MDP')
 		self.p = p
+		self.PLOT = PLOT
 
 	def random_init(self):
 		#initialiser les murs
@@ -73,15 +76,18 @@ class Generator():
 		print(self.cases[:,:,1])
 
 		
-		
-		tkmdp = Tkmdp(self.tk, self.cases,self.p,self.RGB)
-		tkmdp.initialiser()
+		if(self.PLOT):
+			tkmdp = Tkmdp(self.tk, self.cases,self.p,self.RGB)
+			tkmdp.initialiser()
 
 		
 	
 
 
 if __name__=="__main__":
-	g = Generator(10,15,0.1,[0.1,0.2,0.3,0.4],0.6)
+	g = Generator(4,6,0.1,[0.1,0.2,0.3,0.4],0.7,False)
 	g.random_init()
+	p = pdm(g.cases,0.9,0.7)
+	print(p.value_iteration())
+
 
