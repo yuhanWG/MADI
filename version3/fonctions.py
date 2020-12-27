@@ -1,0 +1,118 @@
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import gurobipy as gp
+from gurobipy import GRB
+
+
+def visu_policy(value,policy, dict_action,cases):
+	fig, ax = plt.subplots()
+	value[-1,-1]=1000
+	im = ax.imshow(value)
+	nblignes = value.shape[0]
+	nbColones = value.shape[1]
+	for li in range(nblignes):
+		for cj in range(nbColones):
+			if li==nblignes-1 and cj==nbColones-1:
+				text = ax.text(li,cj,"G",ha="center",va="center")
+			else:
+				if cases[li,cj,0]!=0:
+					text = ax.text(cj,li,str(dict_action[policy[li,cj]]),ha="center",va="center")
+	plt.show()
+
+
+def value_iteration(env,gamma,max_iteration=2000):
+	nblignes,nbColonnes = env.state_space
+	value_table = np.zeros(env.state_space)
+	threshold = 0.001
+	delta = 1
+	nb_iteration = 0
+	
+	while(delta>threshold):
+		delta = 0
+
+		current_values = value_table.copy()
+		for li in range(nblignes):
+			for cj in range(nbColonnes):
+				if not(li==nblignes-1 and cj==nbColonnes-1):
+					if env.cases[li,cj,0]>0:
+						Qs_a = []
+						for a in env.action_space:
+							next_state, proba_transition = env.step(li,cj,a)
+							v_s = [value_table[s] for s in next_state]
+							R = [env.reward[s] for s in next_state]
+							Rs = np.sum(np.array(R)*np.array(proba_transition))
+							Qs_a.append(Rs+gamma*np.sum(np.array(proba_transition)*np.array(v_s)))
+						current_values[li,cj] = max(Qs_a)
+				delta = max(delta,np.abs(value_table[li,cj]-current_values[li,cj]))
+
+		value_table = current_values
+		nb_iteration += 1
+
+
+	policy = np.zeros(env.state_space)
+	for i in range(nblignes):
+			for j in range(nbColonnes):
+				if not (i==nblignes-1 and j==nbColonnes-1):
+					if(env.cases[i,j,0]>0):
+						Qs_a = []
+							#Rs = self.risque[int(self.cases[i,j,0])]
+						for a in env.action_space:
+							next_state, proba_transition = env.step(i,j,a)
+							v_s = [value_table[s] for s in next_state]
+							R = [env.reward[s] for s in next_state]
+							Rs = np.sum(np.array(R)*np.array(proba_transition))
+							Qs_a.append(Rs+gamma*np.sum(np.array(proba_transition)*np.array(v_s)))
+						#print("hello",Qs_a)
+						Qs_a = np.array(Qs_a)
+						policy[i,j] = np.argmax(Qs_a)
+
+	return nb_iteration,value_table,policy
+
+
+
+def dual_pl_mono(env,gamma):
+	nblignes,nbColonnes = env.state_space
+	state = env.cases[:,:,0]
+
+	m = gp.Model()
+	m.setParam("OutputFlag",False)
+	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),self.actions,name="x_s_a")
+
+
+
+
+	obj = gp.LinExpr()
+
+	for i in range(nblignes):
+		for j in range(nbColonnes):
+			if not(env.cases[:,:,0]==0):
+				if not(i==nblignes-1 and j==nbColonnes-1):
+					for a in env.action_space:
+						next_state, proba_transition = env.step(i,j,a)
+						R = [env.reward[s] for s in next_state]
+						Rs = np.sum(np.array(R)*np.array(proba_transition))
+						obj += x_s_a[(i,j,a)]*Rs
+
+				expr1 = gp.LinExpr()
+				for a in env.action_space:
+					expr1 += x_s_a[(i,j,a)]
+
+				last_state = env.step_back(i+1,j+1)
+				expr2 = gp.LinExpr()
+				for l in range(last_state.shape[1]):
+					_s_x,_s_y = last_state[:,i]
+					if env.cases[_s_x,_s_y,0]>0 and not(_s_x==nblignes-1 and _s_y==nbColonnes-1):
+						for a in env.action_space:
+							next_state,proba_transition = self.one_step_forward(_s_x,_s_y,a)
+							if (i,j) in next_state:
+								index = next_state.index((i,j))
+								
+								proba = proba_transition[index]
+								expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
+	m.setObjective(obj,GRB.MAXIMIZE)
+	m.optimize()
+
+	for v in m.getVars():
+			print(v.Varname,v.x)
+								
