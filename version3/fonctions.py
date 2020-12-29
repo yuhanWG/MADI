@@ -14,7 +14,7 @@ def visu_policy(value,policy, dict_action,cases):
 	for li in range(nblignes):
 		for cj in range(nbColones):
 			if li==nblignes-1 and cj==nbColones-1:
-				text = ax.text(li,cj,"G",ha="center",va="center")
+				text = ax.text(cj,li,"G",ha="center",va="center")
 			else:
 				if cases[li,cj,0]!=0:
 					text = ax.text(cj,li,str(dict_action[policy[li,cj]]),ha="center",va="center")
@@ -27,6 +27,7 @@ def value_iteration(env,gamma,max_iteration=2000):
 	threshold = 0.001
 	delta = 1
 	nb_iteration = 0
+
 	
 	while(delta>threshold):
 		delta = 0
@@ -77,6 +78,93 @@ def dual_pl_mono(env,gamma):
 
 	m = gp.Model()
 	m.setParam("OutputFlag",False)
+	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),env.action_space,name="x_s_a")
+
+
+
+
+	obj = gp.LinExpr()
+
+	for i in range(nblignes):
+		for j in range(nbColonnes):
+			if not(env.cases[i,j,0]==0):
+				if not(i==nblignes-1 and j==nbColonnes-1):
+					for a in env.action_space:
+						next_state, proba_transition = env.step(i,j,a)
+						R = [env.reward[s] for s in next_state]
+						Rs = np.sum(np.array(R)*np.array(proba_transition))
+						obj += x_s_a[(i,j,a)]*Rs
+
+				expr1 = gp.LinExpr()
+				for a in env.action_space:
+					expr1 += x_s_a[(i,j,a)]
+
+				last_state = env.step_back(i+1,j+1)
+				expr2 = gp.LinExpr()
+				for l in range(last_state.shape[1]):
+					_s_x,_s_y = last_state[:,l]
+					if env.cases[_s_x,_s_y,0]>0 and not(_s_x==nblignes-1 and _s_y==nbColonnes-1):
+						for a in env.action_space:
+							next_state,proba_transition = env.step(_s_x,_s_y,a)
+							if (i,j) in next_state:
+								index = next_state.index((i,j))
+								#print(proba_transition)
+								#print(index)
+								proba = proba_transition[index]
+								expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
+				m.addConstr(expr1-gamma*expr2==1)
+	m.setObjective(obj,GRB.MAXIMIZE)
+	m.optimize()
+
+	
+	policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
+	for li in range(nblignes):
+		for cj in range(nbColonnes):
+			for a in range(len(env.action_space)):
+				v = x_s_a[(li,cj,env.action_space[a])]
+				policy[li,cj,a] = v.x
+	'''
+	normalisation
+	'''
+
+	policy = normalise(policy)
+
+	return policy
+
+
+def normalise(policy):
+	pn = policy.copy()
+	nblignes,nbColonnes,nbActions = policy.shape
+	for i in range(nblignes):
+		for j in range(nbColonnes):
+			if(np.sum(policy[i,j,:])!=0):
+				pn[i,j,:] = policy[i,j,:]/np.sum(policy[i,j,:])
+	return pn
+
+
+def get_a_policy(policy):
+	'''
+	depuis une politique mixte, return a policy per qui peut etre visualiser
+
+	'''
+	nblignes,nbColonnes,nbActions = policy.shape
+	pd = np.zeros((nblignes,nbColonnes))
+	for i in range(nblignes):
+		for j in range(nbColonnes):
+			pd[i,j] = int(np.argmax(policy[i,j,:]))
+
+	return pd
+
+	
+	
+
+'''
+def dual_pl_mono(env,gamma):
+	nblignes,nbColonnes = env.state_space
+	state = env.cases[:,:,0]
+
+	m = gp.Model()
+	m.setParam("OutputFlag",False)
 	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),self.actions,name="x_s_a")
 
 
@@ -116,3 +204,4 @@ def dual_pl_mono(env,gamma):
 	for v in m.getVars():
 			print(v.Varname,v.x)
 								
+'''

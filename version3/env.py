@@ -15,6 +15,17 @@ class Env():
 		self.action_space = ["up","down","left","right"]
 		self.state_space = (nblignes,nbColonnes)
 
+	
+	def reset_reward(self,new_reward):
+		# new_reward : dictionnaire de couleur-cout
+		for i in range(self.nblignes):
+			for j in range(self.nbColonnes):
+				if(self.cases[i,j,0]!=0):
+					c = self.cases[i,j,0]
+					self.reward[i,j] = new_reward[c]
+		self.reward[-1,-1]=max_reward
+		#print(self.reward) 
+
 	def reset(self):
 		for i in range(self.nblignes):
 			for j in range(self.nbColonnes):
