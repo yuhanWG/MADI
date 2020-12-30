@@ -72,15 +72,15 @@ def value_iteration(env,gamma,max_iteration=2000):
 
 
 
-def dual_pl_mono(env,gamma):
+def dual_pl_mono(env,gamma,pure=False):
 	nblignes,nbColonnes = env.state_space
 	state = env.cases[:,:,0]
 
 	m = gp.Model()
 	m.setParam("OutputFlag",False)
-	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),env.action_space,name="x_s_a")
+	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),env.action_space,vtype=GRB.CONTINUOUS,name="x_s_a")
 
-
+	#d = []
 
 
 	obj = gp.LinExpr()
@@ -94,27 +94,54 @@ def dual_pl_mono(env,gamma):
 						R = [env.reward[s] for s in next_state]
 						Rs = np.sum(np.array(R)*np.array(proba_transition))
 						obj += x_s_a[(i,j,a)]*Rs
+						m.addConstr(x_s_a[(i,j,a)]>=0)
 
 				expr1 = gp.LinExpr()
+
 				for a in env.action_space:
 					expr1 += x_s_a[(i,j,a)]
-
+				#print(expr1)
 				last_state = env.step_back(i+1,j+1)
 				expr2 = gp.LinExpr()
 				for l in range(last_state.shape[1]):
 					_s_x,_s_y = last_state[:,l]
-					if env.cases[_s_x,_s_y,0]>0 and not(_s_x==nblignes-1 and _s_y==nbColonnes-1):
-						for a in env.action_space:
-							next_state,proba_transition = env.step(_s_x,_s_y,a)
-							if (i,j) in next_state:
-								index = next_state.index((i,j))
-								#print(proba_transition)
-								#print(index)
-								proba = proba_transition[index]
-								expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
+					if env.cases[_s_x,_s_y,0]>0:
+					# end state cant move
+						if not(_s_x==nblignes-1 and _s_y==nbColonnes-1):
+							for a in env.action_space:
+								next_state,proba_transition = env.step(_s_x,_s_y,a)
+								if (i,j) in next_state:
+									index = next_state.index((i,j))
+									#print(proba_transition)
+									#print(index)
+									proba = proba_transition[index]
+									#expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
+									expr2 += x_s_a[_s_x,_s_y,a]*proba
+				
+				
 				m.addConstr(expr1-gamma*expr2==1)
+
+				
+	
+	if pure:
+		d_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),env.action_space,vtype=GRB.BINARY,name="d_s_a")
+	# determiner une politique pure
+		for li in range(nblignes):
+			for cj in range(nbColonnes):
+				
+				if env.cases[li,cj,0]>0:
+					if not(li==nblignes-1 and cj==nbColonnes-1):
+						expr = gp.LinExpr()
+						for a in env.action_space:
+							expr += d_s_a[(li,cj,a)]
+							m.addConstr((1-gamma)*x_s_a[(li,cj,a)]<=d_s_a[(li,cj,a)])
+							m.addConstr(x_s_a[(li,cj,a)]<=1/(1-gamma))
+						m.addConstr(expr<=1)
+
 	m.setObjective(obj,GRB.MAXIMIZE)
 	m.optimize()
+
+
 
 	
 	policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
@@ -127,7 +154,7 @@ def dual_pl_mono(env,gamma):
 	normalisation
 	'''
 
-	policy = normalise(policy)
+	#print(m.display())
 
 	return policy
 
@@ -154,54 +181,3 @@ def get_a_policy(policy):
 			pd[i,j] = int(np.argmax(policy[i,j,:]))
 
 	return pd
-
-	
-	
-
-'''
-def dual_pl_mono(env,gamma):
-	nblignes,nbColonnes = env.state_space
-	state = env.cases[:,:,0]
-
-	m = gp.Model()
-	m.setParam("OutputFlag",False)
-	x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),self.actions,name="x_s_a")
-
-
-
-
-	obj = gp.LinExpr()
-
-	for i in range(nblignes):
-		for j in range(nbColonnes):
-			if not(env.cases[:,:,0]==0):
-				if not(i==nblignes-1 and j==nbColonnes-1):
-					for a in env.action_space:
-						next_state, proba_transition = env.step(i,j,a)
-						R = [env.reward[s] for s in next_state]
-						Rs = np.sum(np.array(R)*np.array(proba_transition))
-						obj += x_s_a[(i,j,a)]*Rs
-
-				expr1 = gp.LinExpr()
-				for a in env.action_space:
-					expr1 += x_s_a[(i,j,a)]
-
-				last_state = env.step_back(i+1,j+1)
-				expr2 = gp.LinExpr()
-				for l in range(last_state.shape[1]):
-					_s_x,_s_y = last_state[:,i]
-					if env.cases[_s_x,_s_y,0]>0 and not(_s_x==nblignes-1 and _s_y==nbColonnes-1):
-						for a in env.action_space:
-							next_state,proba_transition = self.one_step_forward(_s_x,_s_y,a)
-							if (i,j) in next_state:
-								index = next_state.index((i,j))
-								
-								proba = proba_transition[index]
-								expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
-	m.setObjective(obj,GRB.MAXIMIZE)
-	m.optimize()
-
-	for v in m.getVars():
-			print(v.Varname,v.x)
-								
-'''

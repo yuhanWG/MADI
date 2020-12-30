@@ -167,8 +167,10 @@ class Env():
 
 
 	def step_back(self,li,cj):
+
 		states_add_fenetre = -np.ones((self.nblignes+2,self.nbColonnes+2))
 		states_add_fenetre[1:-1,1:-1] = self.cases[:,:,0]
+		#print(states_add_fenetre)
 
 		index_x, index_y = np.where(states_add_fenetre[li-1:li+2,cj-1:cj+2]!=-1)
 		index_x = index_x+li-1
