@@ -27,13 +27,16 @@ class Env():
 		#print(self.reward) 
 
 	def reset(self):
+
 		for i in range(self.nblignes):
 			for j in range(self.nbColonnes):
-				m = np.random.rand()
+				m = np.random.uniform(0,1)
 				#?difference avec np.random.uniform(0,1)
 				if(m>self.PMur):
 					#attribuer un chiffre
 					self.cases[i,j,1] = np.random.randint(low=1,high=10)
+					#self.cases[i,j,1] = np.random.random_integers(9)
+					#print(self.cases[i,j,1])
 					#si cette case n'est pas une mur,alors distribuer une couleur
 					c = np.random.uniform(0,1)
 					if c<self.pVert:
@@ -50,9 +53,18 @@ class Env():
 		self.cases[0,0,0]=np.random.randint(1,5)
 		self.cases[0,1,0]=np.random.randint(1,5)
 		self.cases[1,0,0]=np.random.randint(1,5)
+
 		self.cases[self.nblignes-1,self.nbColonnes-1,0]=np.random.randint(1,5)
 		self.cases[self.nblignes-2,self.nbColonnes-1,0]=np.random.randint(1,5)
 		self.cases[self.nblignes-1,self.nbColonnes-2,0]=np.random.randint(1,5)
+
+		self.cases[0,0,1]=np.random.randint(1,10)
+		self.cases[0,1,1]=np.random.randint(1,10)
+		self.cases[1,0,1]=np.random.randint(1,10)
+
+		self.cases[self.nblignes-1,self.nbColonnes-1,1]=np.random.randint(1,10)
+		self.cases[self.nblignes-2,self.nbColonnes-1,1]=np.random.randint(1,10)
+		self.cases[self.nblignes-1,self.nbColonnes-2,1]=np.random.randint(1,10)
 
 		self.reward = -self.cases[:,:,0]
 		self.reward[-1,-1] = max_reward

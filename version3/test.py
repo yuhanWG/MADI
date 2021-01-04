@@ -1,9 +1,11 @@
 from fonctions import *
 from env import *
+from grille import *
 
 if __name__=="__main__":
-	env = Env(10,10,1,0.2,[0.1,0.2,0.3,0.4])
+	env = Env(10,10,0.6,0.2,[0.1,0.2,0.3,0.4])
 	env.reset()
+	'''
 	cases = env.cases
 	p=dual_pl_mono(env,0.9)
 	nb,v,policy=value_iteration(env,0.9,max_iteration=2000)
@@ -13,3 +15,9 @@ if __name__=="__main__":
 	p2=dual_pl_mono(env,0.9,True)
 	pd2 = get_a_policy(p2)
 	visu_policy(v,pd2,dict_action,cases)
+	'''
+	#print(env.cases[:,:,0])
+	#print(env.cases[:,:,1])
+	g=grille(env)
+	#g.initialiser(0.9)
+	g.initialiser(0.9,"programma lineaire")
