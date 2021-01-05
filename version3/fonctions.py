@@ -21,12 +21,20 @@ def visu_policy(value,policy, dict_action,cases):
     plt.show()
 
 
-def value_iteration(env,gamma,max_iteration=2000):
+def value_iteration(env,gamma,problem="risque",max_iteration=2000):
     nblignes,nbColonnes = env.state_space
     value_table = np.zeros(env.state_space)
     threshold = 0.001
     delta = 1
     nb_iteration = 0
+    if problem == "risque":
+        reward = env.reward
+    else:
+        if problem == "equilibre":
+            reward = -env.cases[:,:,1]
+            reward[-1,-1] = 1000
+
+    print(reward)
 
     
     while(delta>threshold):
@@ -41,7 +49,7 @@ def value_iteration(env,gamma,max_iteration=2000):
                         for a in env.action_space:
                             next_state, proba_transition = env.step(li,cj,a)
                             v_s = [value_table[s] for s in next_state]
-                            R = [env.reward[s] for s in next_state]
+                            R = [reward[s] for s in next_state]
                             Rs = np.sum(np.array(R)*np.array(proba_transition))
                             Qs_a.append(Rs+gamma*np.sum(np.array(proba_transition)*np.array(v_s)))
                         current_values[li,cj] = max(Qs_a)
@@ -61,7 +69,7 @@ def value_iteration(env,gamma,max_iteration=2000):
                         for a in env.action_space:
                             next_state, proba_transition = env.step(i,j,a)
                             v_s = [value_table[s] for s in next_state]
-                            R = [env.reward[s] for s in next_state]
+                            R = [reward[s] for s in next_state]
                             Rs = np.sum(np.array(R)*np.array(proba_transition))
                             Qs_a.append(Rs+gamma*np.sum(np.array(proba_transition)*np.array(v_s)))
                         #print("hello",Qs_a)
