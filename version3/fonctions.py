@@ -151,20 +151,26 @@ def dual_pl_mono(env,gamma,pure=False):
 
 
 
+    #
+    try:
+        policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
+        for li in range(nblignes):
+            for cj in range(nbColonnes):
+                for a in range(len(env.action_space)):
+                    v = x_s_a[(li,cj,env.action_space[a])]
+                    policy[li,cj,a] = v.x
+        return policy,m.objVal
     
-    policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
-    for li in range(nblignes):
-        for cj in range(nbColonnes):
-            for a in range(len(env.action_space)):
-                v = x_s_a[(li,cj,env.action_space[a])]
-                policy[li,cj,a] = v.x
+    except:
+        print("le modele est infeasable, veuillez recharger le env par reset()")
     '''
     normalisation
     '''
 
-    #print(m.display())
+    
 
-    return policy,m.objVal
+
+    
 
 
 def normalise(policy):
@@ -193,6 +199,8 @@ def get_a_policy(policy):
 
 
 def minmax_policy(env,gamma):
+    m.setParam("OutputFlag",False)
+
     ressources = env.cases[:,:,1]
     ressources[-1,-1]=0
     #? besoin de modifier la ressource consomme par la case but?
@@ -259,10 +267,111 @@ def minmax_policy(env,gamma):
                 v = x_s_a[(li,cj,env.action_space[a])]
                 policy[li,cj,a] = v.x
 
+    '''
     for i in range(len(critere)):
         print(critere[i])
+    '''
     pm = np.array([critere[i].getValue() for i in range(4)])
     return policy,m.objVal,pm
+
+
+
+def simuler(env,policy,problem="risque"):
+    if problem=="risque":
+        res = env.reward
+    else:
+        if problem=="equilibre":
+            res = env.cases[:,:,1]
+        else:
+            raise Exception("Le probleme n'est pas inclus!")
+    
+    res[-1,-1]=0
+    nblig,nbcol=env.state_space
+    li=0
+    cj=0
+    cout_total=0
+    cout_dis=np.zeros(4)
+
+    cpt = 0
+    
+    if len(policy.shape)==2:
+        # politique deterministe:
+        while not(li==nblig-1 and cj==nbcol-1):
+            if cpt>1000:
+                break
+
+            index = int(policy[li,cj])
+            action = env.action_space[index]
+            next_state,proba = env.step(li,cj,action)
+            #print(li,cj,action,next_state,proba)
+            if len(proba)==1:
+                li,cj = next_state[0]
+            else:
+                rand = np.random.uniform(0,1)
+                if len(proba)==2:
+                    if rand<proba[0]:
+                        li,cj = next_state[0]
+                    else:
+                        li,cj = next_state[1]
+                else:
+                    if rand<=proba[0]:
+                        li,cj=next_state[0]
+                    else:
+                        if proba[0]<rand and rand<=proba[0]+proba[1]:
+                            li,ci=next_state[1]
+                        else:
+                            li,cj=next_state[2]
+            #print(li,cj,res[li,cj])
+            cout_total+=res[li,cj]
+            index = env.cases[li,cj,0]-1
+            cout_dis[index] -= res[li,cj]
+    else:
+        if len(policy.shape)==3:
+            # politique mixte
+            print("mixte")
+            while not(li==nblig-1 and cj==nbcol-1):
+                #print(li,cj)
+                pUp,pD,pL,pR = policy[li,cj,:]
+                rand = np.random.uniform(0,1)
+                while(rand==0):
+                    rand = np.random.uniform(0,1)
+                if rand<=pUp:
+                    #print("up")
+                    next_state,proba=env.step(li,cj,"up")
+                else:
+                    if rand<=pUp+pD:
+                        #print("down")
+                        next_state,proba=env.step(li,cj,"down")
+                    else:
+                        if rand<=pUp+pD+pL:
+                            #print("left")
+                            next_state,proba=env.step(li,cj,"left")
+                        else:
+                            #print("right")
+                            next_state,proba=env.step(li,cj,"right")
+                if len(proba)==1:
+                    li,cj = next_state[0]
+                else:
+                    rand = np.random.uniform(0,1)
+                    if len(proba)==2:
+                        if rand<proba[0]:
+                            li,cj = next_state[0]
+                        else:
+                            li,cj = next_state[1]
+                    else:
+                        if rand<=proba[0]:
+                            li,cj=next_state[0]
+                        else:
+                            if proba[0]<rand and rand<=proba[0]+proba[1]:
+                                li,ci=next_state[1]
+                            else:
+                                li,cj=next_state[2]
+                #print(li,cj,res[li,cj])
+                cout_total+=res[li,cj]
+                index = env.cases[li,cj,0]-1
+                cout_dis[index] -= res[li,cj]
+                
+    return cout_total,cout_dis
 
 
 
