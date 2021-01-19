@@ -20,6 +20,28 @@ def visu_policy(value,policy, dict_action,cases):
                     text = ax.text(cj,li,str(dict_action[policy[li,cj]]),ha="center",va="center")
     plt.show()
 
+def visu_policy_plt(pn,env):
+    nblig,nbcol = pn.shape
+    for i in range(nblig+1):
+        plt.hlines(i,0,nbcol)
+    for j in range(nbcol+1):
+        plt.vlines(j,0,nblig)
+    for li in range(nblig):
+        for cj in range(nbcol):
+            if env.cases[li,cj,0]!=0:
+                a = pn[li,cj]
+                if(a==0):
+                    plt.annotate('',xy=(cj+0.5,nblig-li),xytext=(cj+0.5,nblig-li-1),arrowprops=dict(arrowstyle='->'))
+                #print(cj,nblig-li)
+                if(a==1):
+                    plt.annotate('',xy=(cj+0.5,nblig-li-1),xytext=(cj+0.5,nblig-li),arrowprops=dict(arrowstyle='->'))
+                if(a==3):
+                    plt.annotate('',xy=(cj+1,nblig-li-0.5),xytext=(cj,nblig-li-0.5),arrowprops=dict(arrowstyle='->'))
+                if(a==2):
+                    plt.annotate('',xy=(cj,nblig-li-0.5),xytext=(cj+1,nblig-li-0.5),arrowprops=dict(arrowstyle='->'))
+
+plt.show()
+
 
 def value_iteration(env,gamma,problem="risque",max_iteration=2000):
     nblignes,nbColonnes = env.state_space
@@ -34,7 +56,7 @@ def value_iteration(env,gamma,problem="risque",max_iteration=2000):
             reward = -env.cases[:,:,1]
             reward[-1,-1] = 1000
 
-    print(reward)
+    #print(reward)
 
     
     while(delta>threshold):
@@ -207,6 +229,7 @@ def get_a_policy(policy):
 
 
 def minmax_policy(env,gamma):
+    m = gp.Model()
     m.setParam("OutputFlag",False)
 
     ressources = env.cases[:,:,1]
