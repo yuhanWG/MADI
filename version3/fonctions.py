@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import gurobipy as gp
 from gurobipy import GRB
 
+max_reward = 1000
+
+
 
 def visu_policy(value,policy, dict_action,cases):
     fig, ax = plt.subplots()
@@ -54,11 +57,10 @@ def value_iteration(env,gamma,problem="risque",max_iteration=2000):
     else:
         if problem == "equilibre":
             reward = -env.cases[:,:,1]
-            reward[-1,-1] = 1000
+            reward[-1,-1] = max_reward
+        else:
+            raise Exception("Le probleme n'est pas inclus!")
 
-    #print(reward)
-
-    
     while(delta>threshold):
         delta = 0
 
@@ -218,6 +220,7 @@ def get_a_policy(policy):
     depuis une politique mixte, return a policy per qui peut etre visualiser
 
     '''
+    policy = normalise(policy)
     nblignes,nbColonnes,nbActions = policy.shape
     pd = np.zeros((nblignes,nbColonnes))
     for i in range(nblignes):
@@ -232,17 +235,18 @@ def minmax_policy(env,gamma):
     m = gp.Model()
     m.setParam("OutputFlag",False)
 
-    ressources = env.cases[:,:,1]
-    ressources[-1,-1]=0
-    #? besoin de modifier la ressource consomme par la case but?
+    ressources = env.cases[:,:,1].copy()
+    ressources[-1,-1] = 0
+        #? besoin de modifier la ressource consomme par la case but?
     state = env.cases[:,:,0]
-    critere = []
+    #critere = []
     nblignes,nbColonnes = env.state_space
     m = gp.Model()
     z = m.addVar(vtype=GRB.CONTINUOUS,name="z")
     
     x_s_a = m.addVars(np.arange(nblignes),np.arange(nbColonnes),env.action_space,vtype=GRB.CONTINUOUS,name="x_s_a")
     
+    critere=[gp.LinExpr()]*4
     for f in range(4):
         expr = gp.LinExpr()
         for i in range(nblignes):
@@ -252,17 +256,21 @@ def minmax_policy(env,gamma):
                         for a in env.action_space:
                             m.addConstr(x_s_a[(i,j,a)]>=0)
                             next_state, proba_transition = env.step(i,j,a)
+                            #print(i,j,next_state,proba_transition)
                             #print(i,j,a,next_state,proba_transition)
                             for x in range(len(next_state)):
                                 s = next_state[x]
                                 p = proba_transition[x]
-
                                 fi = state[s]-1
                                 if fi==f:
                                     R = ressources[s]*p
                                     expr += x_s_a[(i,j,a)]*R
+                                    #print(i,j,a,s,ressources[s],p)
+        #print(expr)
         m.addConstr(z>=expr,name="c"+str(f))
-        critere.append(expr)
+        #m.addConstr(z<=expr,name="c"+str(f))
+        #critere.append(expr)
+        critere[f]=expr
         
     for li in range(nblignes):
         for cj in range(nbColonnes):
@@ -273,6 +281,8 @@ def minmax_policy(env,gamma):
                             expr1 += x_s_a[(li,cj,a)]
                         
                         last_state = env.step_back(li+1,cj+1)
+                        #print(expr1)
+                        #print(li,cj,last_state)
                         expr2 = gp.LinExpr()
                         for l in range(last_state.shape[1]):
                             _s_x,_s_y = last_state[:,l]
@@ -284,26 +294,34 @@ def minmax_policy(env,gamma):
                                         if (li,cj) in next_state:
                                             index = next_state.index((li,cj))
                                             proba = proba_transition[index]
-                                            expr2 += x_s_a[_s_x,_s_y,a]*proba
+                                            expr2 += x_s_a[(_s_x,_s_y,a)]*proba
                         m.addConstr(expr1-gamma*expr2==1)
    
     m.setObjective(z,GRB.MINIMIZE)
-    #m.write("myfile.lp")
+    # m.setObjective(z,GRB.MAXIMIZE)
+    m.write("myfile.lp")
     m.optimize()
-    
-    policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
-    for li in range(nblignes):
-        for cj in range(nbColonnes):
-            for a in range(len(env.action_space)):
-                v = x_s_a[(li,cj,env.action_space[a])]
-                policy[li,cj,a] = v.x
 
-    '''
-    for i in range(len(critere)):
-        print(critere[i])
-    '''
-    pm = np.array([critere[i].getValue() for i in range(4)])
-    return policy,m.objVal,pm
+    if m.status==GRB.OPTIMAL:
+    
+        policy=np.zeros((nblignes,nbColonnes,len(env.action_space)))
+        for li in range(nblignes):
+            for cj in range(nbColonnes):
+                for a in range(len(env.action_space)):
+                    v = x_s_a[(li,cj,env.action_space[a])]
+                    policy[li,cj,a] = v.x
+
+        '''
+        pm=[]
+        for i in range(len(critere)):
+            #print(critere[i])
+            print(critere[i].getValue())
+        '''
+        
+        #print(policy)
+        return policy,m.objVal
+    else:
+        raise Exception("modele infeasable")
 
 
 
@@ -359,7 +377,7 @@ def simuler(env,policy,problem="risque"):
     else:
         if len(policy.shape)==3:
             # politique mixte
-            print("mixte")
+            # print("mixte")
             while not(li==nblig-1 and cj==nbcol-1):
                 #print(li,cj)
                 pUp,pD,pL,pR = policy[li,cj,:]
