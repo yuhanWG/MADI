@@ -33,7 +33,7 @@ g.initialiser(gamma=0.9,methode="prog lineaire")
 g = grille(env,problem="equilibre")
 g.initialiser(gamma=0.9,methode="prog lineaire")
 ```
-![](https://github.com/yuhanWG/MADI/blob/master/images/instance.png)
+![](https://github.com/yuhanWG/MADI/blob/master/images/2b-1.png)
 
 ### Exemple2 - test-value-iteration.py
 Ce fichier peut être directement executé dans le terminal, y compris l'interface de grille et la visualisation de la politique stationnaire. Dans l'exemple suivant, on va initialiser une grille de taille (10,15), la probabilité du mouvement est 0.8, le taux d'actualisation est 0.99.
