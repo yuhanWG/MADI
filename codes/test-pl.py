@@ -18,4 +18,4 @@ if __name__=="__main__":
 	cases=env.reset()
 
 	g = grille(env,problem=pr)
-	g.initialiser(gamma,methode="programma lineaire",pure=True)
+	g.initialiser(gamma,methode="programma lineaire")

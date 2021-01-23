@@ -75,6 +75,8 @@ def value_iteration(env,gamma,problem="risque",max_iteration=2000):
                             next_state, proba_transition = env.step(li,cj,a)
                             v_s = [value_table[s] for s in next_state]
                             R = [reward[s] for s in next_state]
+                            if len(R)==1:
+                                R = [-100]
                             Rs = np.sum(np.array(R)*np.array(proba_transition))
                             Qs_a.append(Rs+gamma*np.sum(np.array(proba_transition)*np.array(v_s)))
                         current_values[li,cj] = max(Qs_a)
@@ -105,9 +107,15 @@ def value_iteration(env,gamma,problem="risque",max_iteration=2000):
 
 
 
-def dual_pl_mono(env,gamma,pure=False):
+def dual_pl_mono(env,gamma,pure=False,problem='risque'):
     nblignes,nbColonnes = env.state_space
     state = env.cases[:,:,0]
+    if problem=='risque':
+        reward = env.reward
+    else:
+        reward = -env.cases[:,:,1]
+    reward[-1,-1] = max_reward
+    #print(reward)
 
     m = gp.Model()
     m.setParam("OutputFlag",False)
@@ -125,8 +133,10 @@ def dual_pl_mono(env,gamma,pure=False):
                 if not(i==nblignes-1 and j==nbColonnes-1):
                     for a in env.action_space:
                         next_state, proba_transition = env.step(i,j,a)
-                        R = [env.reward[s] for s in next_state]
-                        #print(proba_transition)
+                        R = [reward[s] for s in next_state]
+                        # empecher le robot depuis la mur
+                        if(len(R)==1):
+                            R = [-1000]
                         Rs = np.sum(np.array(R)*np.array(proba_transition))
                         obj += x_s_a[(i,j,a)]*Rs
                         m.addConstr(x_s_a[(i,j,a)]>=0)
@@ -147,8 +157,6 @@ def dual_pl_mono(env,gamma,pure=False):
                                     next_state,proba_transition = env.step(_s_x,_s_y,a)
                                     if (i,j) in next_state:
                                         index = next_state.index((i,j))
-                                        #print(proba_transition)
-                                        #print(index)
                                         proba = proba_transition[index]
                                         #expr2.add(x_s_a[(_s_x,_s_y,a)],proba)
                                         expr2 += x_s_a[_s_x,_s_y,a]*proba
@@ -172,7 +180,7 @@ def dual_pl_mono(env,gamma,pure=False):
                             expr += d_s_a[(li,cj,a)]
                             m.addConstr((1-gamma)*x_s_a[(li,cj,a)]<=d_s_a[(li,cj,a)])
                             # m.addConstr(x_s_a[(li,cj,a)]<=1/(1-gamma))
-                        m.addConstr(expr<=1)
+                        m.addConstr(expr=1)
 
 
     m.update()
@@ -192,6 +200,7 @@ def dual_pl_mono(env,gamma,pure=False):
                 for a in range(len(env.action_space)):
                     v = x_s_a[(li,cj,env.action_space[a])]
                     policy[li,cj,a] = v.x
+        policy = normalise(policy)
         return policy,m.objVal
     
     except:
@@ -312,14 +321,7 @@ def minmax_policy(env,gamma):
                     v = x_s_a[(li,cj,env.action_space[a])]
                     policy[li,cj,a] = v.x
 
-        '''
-        pm=[]
-        for i in range(len(critere)):
-            #print(critere[i])
-            print(critere[i].getValue())
-        '''
-        
-        #print(policy)
+        policy = normalise(policy)
         return policy,m.objVal
     else:
         raise Exception("modele infeasable")
@@ -354,7 +356,7 @@ def simuler(env,policy,problem="risque"):
             action = env.action_space[index]
             next_state,proba = env.step(li,cj,action)
             if(len(next_state)!= len(proba)):
-                print("Eror")
+                print("Error")
                 print(env.cases)
                 print(li,cj,action,next_state,proba)
             #print(li,cj,action,next_state,proba)
@@ -425,7 +427,10 @@ def simuler(env,policy,problem="risque"):
                 index = env.cases[li,cj,0]-1
                 cout_dis[index] -= res[li,cj]
                 
-    return cout_total,cout_dis
+    if problem=="equilibre":
+        return cout_total,cout_dis
+    else:
+        return cout_total
 
 
 

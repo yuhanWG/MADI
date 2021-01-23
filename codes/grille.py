@@ -173,7 +173,7 @@ class grille():
 				if methode == "value iteration":
 					#nbite,value,policy = value_iteration(self.env,gamma)
 					#modification 01/20
-					nbite,value,policy = value_iteration(self.env,gamma,problem="risque")
+					nbite,value,policy = value_iteration(self.env,gamma,problem="equilibre")
 					self.policy = policy
 
 				else:
