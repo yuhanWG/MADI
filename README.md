@@ -81,8 +81,7 @@ python test-pl.py 10 15 0.8 equilibre
 - ##### Fichiers .ipynb
     Les fichiers au format ipynb correspondent aux essais numériques dans ce projet qui consiste à étudier le temps de résolution
 et la performance de différentes méthodes. Les figures produites dans les fichiers sont utilisées dans le rapport.
-- ##### images
-    Les figures produits dans les expérimentations, qui sont utilisées dans le rapport.
+
 - ##### rapport
 
 #### Auteurs:
