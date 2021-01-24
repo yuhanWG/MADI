@@ -9,7 +9,7 @@ Python(numpy,matplotlib,Tkinder)
 Gurobi
 
 #### Exemple
-On ne consière ici que les couleurs de chaque case. La couleurs représentent le niveau de risque, on cherche ici à déterminer les politiques qui minimisent l'espérence du coût en utilisant la méthode itération de la valeur. Ici on fait afficher l'interface tkinder qui nous permet de naviguer dans la grille en se dirigrant au clavier avecs les touches, à chaque bas de déplacement, un ou plusieurs compteurs seront mis à jours. La touche sur 'space' permet de simuler une politique stationnaire, déterminée par le paramètre 'méthode' de fontion initialiser.
+Ici on initialise aléatoirement un environnement, fait afficher l'interface tkinder qui nous permet de naviguer dans la grille en se dirigrant au clavier avecs les touches, à chaque bas de déplacement, un ou plusieurs compteurs seront mis à jours. La touche sur 'space' permet de simuler une politique stationnaire. Le bouton policy permet de visualiser une politique déterministe. Le problème à résoudre est passé à la classe grille comme paramètre **problem('equilibre' ou 'risque' par default)**, la méthode de résolution est déterminée par le paramètre **methode('value iteration' par default, 'prog linear')** de fontion grille.initialiser().
 ```Python
 from fonctions import *
 from env import 
@@ -81,6 +81,8 @@ python test-pl.py 10 15 0.8 equilibre
 - ##### Fichiers .ipynb
     Les fichiers au format ipynb correspondent aux essais numériques dans ce projet qui consiste à étudier le temps de résolution
 et la performance de différentes méthodes. Les figures produites dans les fichiers sont utilisées dans le rapport.
+- ##### images
+    Les figures produits dans les expérimentations, qui sont utilisées dans le rapport.
 - ##### rapport
 
 #### Auteurs:
