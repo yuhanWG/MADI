@@ -70,7 +70,7 @@ python test-pl.py 10 15 0.8 equilibre
         de l'environnement(question4a).
         - **dual_pl_mono(env,gamma,pure=False,problem='risque')**: réalisation du programme linéaire. Le paramètre 'pure' est par default False.
         Retourner la politique mixte et la valeur d'objectif après l'optimisation. Si pure=True, retourner une politique pure.
-        - **normalise(policy)**: normalisation
+        - **normalise(policy)**: normalisation d'une politique
         - **minmax_policy(env, gamma)**: réalisation d'un MDP multiobjectif(MOMDP), retourner une politique mixte, et une table des valeurs pour chaque objectif. 
         - **normalise(policy)**: normalisation d'une politique
         - **get_a_policy(policy_mixte)**: a partir d'une politique mixte, retourner une politique pure
